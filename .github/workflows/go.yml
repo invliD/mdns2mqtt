@@ -13,3 +13,7 @@ jobs:
         run: go build
       - name: Format
         run: test -z $(gofmt -l .) || (gofmt -d . && exit 1)
+      - uses: actions/upload-artifact@v4
+        with:
+          path: mdns2mqtt
+          if-no-files-found: error
