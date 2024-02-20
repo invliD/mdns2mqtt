@@ -51,3 +51,6 @@ jobs:
       - name: Load image
         run: |
           docker load --input /tmp/image.tar
+      - name: Push image
+        run: |
+          docker push invlid/mdns2mqtt:latest
