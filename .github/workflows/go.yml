@@ -26,9 +26,9 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      -
-        name: Build and push
+      - name: Build and load
         uses: docker/build-push-action@v5
         with:
           context: .
+          load: true
           tags: invlid/mdns2mqtt:latest
