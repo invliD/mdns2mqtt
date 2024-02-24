@@ -14,7 +14,6 @@ jobs:
             docker-arch: arm64
             go-arch: arm64
             os: linux
-            docker-platform: linux/arm64
           - deb-arch: mips
             go-arch: mips
             os: linux
@@ -59,6 +58,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          platforms: ${{ matrix.os }}/${{ matrix.docker-arch }}
           outputs: type=docker,dest=/tmp/image-${{ matrix.docker-arch }}.tar
           tags: invlid/mdns2mqtt:latest-${{ matrix.docker-arch }}
       - name: Upload Docker image
