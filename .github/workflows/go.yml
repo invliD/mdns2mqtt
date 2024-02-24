@@ -18,32 +18,33 @@ jobs:
           go-version: '1.21'
       - name: Build
         run: GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -tags netgo,osusergo
+      - run: tar cvzf mdns2mqtt-${{ matrix.arch }}.tgz mdns2mqtt
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
           name: binary-${{ matrix.os }}-${{ matrix.arch }}
-          path: mdns2mqtt
+          path: mdns2mqtt-${{ matrix.arch }}.tgz
           if-no-files-found: error
       - name: Debian package
-        if: ${{ matrix.os == 'linux' }}
+        if: matrix.os == 'linux'
         uses: bpicode/github-action-fpm@master
         with:
           fpm_opts: -s dir -t deb -n mdns2mqtt -a ${{ matrix.arch }} -v 0.0.0 mdns2mqtt=/usr/bin/mdns2mqtt
       - name: Upload .deb package
         uses: actions/upload-artifact@v4
-        if: ${{ matrix.os == 'linux' }}
+        if: matrix.os == 'linux'
         with:
           name: debian-${{ matrix.os }}-${{ matrix.arch }}
           path: "*.deb"
           if-no-files-found: error
       - name: Set up QEMU
-        if: ${{ matrix.os == 'linux' }}
+        if: matrix.os == 'linux'
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
-        if: ${{ matrix.os == 'linux' }}
+        if: matrix.os == 'linux'
         uses: docker/setup-buildx-action@v3
       - name: Build and load
-        if: ${{ matrix.os == 'linux' }}
+        if: matrix.os == 'linux'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -51,7 +52,7 @@ jobs:
           outputs: type=docker,dest=/tmp/image-${{ matrix.arch }}.tar
           tags: invlid/mdns2mqtt:latest-${{ matrix.arch }}
       - name: Upload Docker image
-        if: ${{ matrix.os == 'linux' }}
+        if: matrix.os == 'linux'
         uses: actions/upload-artifact@v4
         with:
           name: docker-image-${{ matrix.arch }}
@@ -69,21 +70,20 @@ jobs:
         run: test -z $(gofmt -l .) || (gofmt -d . && exit 1)
   publish:
     needs: compile
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           merge-multiple: true
-          pattern: docker-image-*
           path: /tmp
       - name: Set up Crane
         uses: imjasonh/setup-crane@v0.1
       - name: Log in to Docker registry
         run: |
           crane auth login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASSWORD }} docker.io
-      - name: Push images
+      - name: Push latest images
         run: |
           crane push /tmp/image-amd64.tar docker.io/invlid/mdns2mqtt:latest-amd64
           crane push /tmp/image-arm64.tar docker.io/invlid/mdns2mqtt:latest-arm64
@@ -93,3 +93,21 @@ jobs:
             -m docker.io/invlid/mdns2mqtt@$(crane digest --tarball /tmp/image-arm64.tar) \
             -m docker.io/invlid/mdns2mqtt@$(crane digest --tarball /tmp/image-mips.tar) \
             -t docker.io/invlid/mdns2mqtt:latest
+      - name: Push release images
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          crane push /tmp/image-amd64.tar docker.io/invlid/mdns2mqtt:${{ github.ref_name }}-amd64
+          crane push /tmp/image-arm64.tar docker.io/invlid/mdns2mqtt:${{ github.ref_name }}-arm64
+          crane push /tmp/image-mips.tar docker.io/invlid/mdns2mqtt:${{ github.ref_name }}-mips
+          crane index append \
+            -m docker.io/invlid/mdns2mqtt@$(crane digest --tarball /tmp/image-amd64.tar) \
+            -m docker.io/invlid/mdns2mqtt@$(crane digest --tarball /tmp/image-arm64.tar) \
+            -m docker.io/invlid/mdns2mqtt@$(crane digest --tarball /tmp/image-mips.tar) \
+            -t docker.io/invlid/mdns2mqtt:${{ github.ref_name }}
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            /tmp/mdns2mqtt-*.tgz
+            /tmp/mdns2mqtt*.deb
