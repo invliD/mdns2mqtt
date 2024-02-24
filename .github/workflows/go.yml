@@ -85,6 +85,6 @@ jobs:
           crane auth login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASSWORD }}
       - name: Push images
         run: |
-          crane digest --tarball /tmp/image-amd64.tar
-          crane digest --tarball /tmp/image-arm64.tar
-          crane digest --tarball /tmp/image-mips.tar
+          crane digest i --tarball /tmp/image-amd64.tar
+          crane digest i --tarball /tmp/image-arm64.tar
+          crane digest i --tarball /tmp/image-mips.tar
