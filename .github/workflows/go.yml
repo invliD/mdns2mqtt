@@ -16,7 +16,7 @@ jobs:
           fetch-depth: 0
       - name: Get version
         id: version
-        run: echo "version=$(git describe)" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(git describe --tags)" >> "$GITHUB_OUTPUT"
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
