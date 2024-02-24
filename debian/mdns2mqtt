@@ -1,0 +1,14 @@
+# The address of the MQTT broker to connect to
+MQTT_ADDRESS=
+
+# The credential to use when connecting to the MQTT broker
+# MQTT_USERNAME=
+# MQTT_PASSWORD=
+
+# The MQTT topic to publish locally discovered MDNS services to. Local discovery is disabled if unset.
+# MQTT_PUBLISH_TOPIC=
+# The MQTT topic to subscribe to. MDNS services received on this topic will be locally announced.
+# MQTT_SUBSCRIBE_TOPIC=
+
+# The interface to listed on and publish MDNS announcements to
+MDNS_INTERFACE=eth0

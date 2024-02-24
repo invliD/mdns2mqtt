@@ -1,0 +1,9 @@
+[Service]
+Type=simple
+ExecStart=/usr/bin/mdns2mqtt
+RestartSec=5s
+Restart=always
+EnvironmentFile=-/etc/default/mdns2mqtt
+
+[Install]
+WantedBy=multi-user.target
