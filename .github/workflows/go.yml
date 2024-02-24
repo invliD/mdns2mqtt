@@ -5,10 +5,22 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64, arm64, mips]
-        os: [darwin, linux]
-        exclude:
-          - arch: mips
+        include:
+          - deb-arch: amd64
+            docker-arch: amd64
+            go-arch: amd64
+            os: linux
+          - deb-arch: aarch64
+            docker-arch: arm64
+            go-arch: arm64
+            os: linux
+            docker-platform: linux/arm64
+          - deb-arch: mips
+            go-arch: mips
+            os: linux
+          - go-arch: amd64
+            os: darwin
+          - go-arch: arm64
             os: darwin
     steps:
       - uses: actions/checkout@v3
@@ -17,24 +29,46 @@ jobs:
         with:
           go-version: '1.21'
       - name: Build
-        run: GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -tags netgo,osusergo
-      - uses: actions/upload-artifact@v4
+        run: GOOS=${{ matrix.os }} GOARCH=${{ matrix.go-arch }} go build -tags netgo,osusergo
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
         with:
-          name: binary-${{ matrix.os }}-${{ matrix.arch }}
+          name: binary-${{ matrix.os }}-${{ matrix.go-arch }}
           path: mdns2mqtt
           if-no-files-found: error
       - name: Debian package
-        if: ${{ matrix.os == 'linux'}}
+        if: ${{ matrix.deb-arch }}
         uses: bpicode/github-action-fpm@master
         with:
-          fpm_opts: -s dir -t deb -n mdns2mqtt -a ${{ matrix.arch }} -v 0.0.0 mdns2mqtt=/usr/bin/mdns2mqtt
-      - uses: actions/upload-artifact@v4
-        if: ${{ matrix.os == 'linux'}}
+          fpm_opts: -s dir -t deb -n mdns2mqtt -a ${{ matrix.deb-arch }} -v 0.0.0 mdns2mqtt=/usr/bin/mdns2mqtt
+      - name: Upload .deb package
+        uses: actions/upload-artifact@v4
+        if: ${{ matrix.deb-arch }}
         with:
-          name: debian-${{ matrix.os }}-${{ matrix.arch }}
+          name: debian-${{ matrix.os }}-${{ matrix.deb-arch }}
           path: "*.deb"
           if-no-files-found: error
-  build:
+      - name: Set up QEMU
+        if: ${{ matrix.docker-arch }}
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        if: ${{ matrix.docker-arch }}
+        uses: docker/setup-buildx-action@v3
+      - name: Build and load
+        if: ${{ matrix.docker-arch }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          outputs: type=docker,dest=/tmp/image-${{ matrix.docker-arch }}.tar
+          tags: invlid/mdns2mqtt:latest-${{ matrix.docker-arch }}
+      - name: Upload Docker image
+        if: ${{ matrix.docker-arch }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image-${{ matrix.docker-arch }}
+          path: /tmp/image-${{ matrix.docker-arch }}.tar
+          if-no-files-found: error
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -42,32 +76,10 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.21'
-      - name: Build
-        run: go build -tags netgo,osusergo
-      - name: Format
+      - name: Lint
         run: test -z $(gofmt -l .) || (gofmt -d . && exit 1)
-      - uses: actions/upload-artifact@v4
-        with:
-          name: binary
-          path: mdns2mqtt
-          if-no-files-found: error
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Build and load
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          outputs: type=docker,dest=/tmp/image.tar
-          tags: invlid/mdns2mqtt:latest
-      - uses: actions/upload-artifact@v4
-        with:
-          name: docker-image
-          path: /tmp/image.tar
-          if-no-files-found: error
   publish:
-    needs: build
+    needs: compile
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
