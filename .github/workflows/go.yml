@@ -26,25 +26,25 @@ jobs:
           path: mdns2mqtt-${{ matrix.arch }}.tgz
           if-no-files-found: error
       - name: Debian package
-        if: ${{ matrix.os == 'linux' }}
+        if: matrix.os == 'linux'
         uses: bpicode/github-action-fpm@master
         with:
           fpm_opts: -s dir -t deb -n mdns2mqtt -a ${{ matrix.arch }} -v 0.0.0 mdns2mqtt=/usr/bin/mdns2mqtt
       - name: Upload .deb package
         uses: actions/upload-artifact@v4
-        if: ${{ matrix.os == 'linux' }}
+        if: matrix.os == 'linux'
         with:
           name: debian-${{ matrix.os }}-${{ matrix.arch }}
           path: "*.deb"
           if-no-files-found: error
       - name: Set up QEMU
-        if: ${{ matrix.os == 'linux' }}
+        if: matrix.os == 'linux'
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
-        if: ${{ matrix.os == 'linux' }}
+        if: matrix.os == 'linux'
         uses: docker/setup-buildx-action@v3
       - name: Build and load
-        if: ${{ matrix.os == 'linux' }}
+        if: matrix.os == 'linux'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -52,7 +52,7 @@ jobs:
           outputs: type=docker,dest=/tmp/image-${{ matrix.arch }}.tar
           tags: invlid/mdns2mqtt:latest-${{ matrix.arch }}
       - name: Upload Docker image
-        if: ${{ matrix.os == 'linux' }}
+        if: matrix.os == 'linux'
         uses: actions/upload-artifact@v4
         with:
           name: docker-image-${{ matrix.arch }}
@@ -70,7 +70,7 @@ jobs:
         run: test -z $(gofmt -l .) || (gofmt -d . && exit 1)
   publish:
     needs: compile
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
       - name: Download artifact
