@@ -28,7 +28,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: binary-${{ matrix.os }}-${{ matrix.arch }}
-          path: mdns2mqtt-${{ matrix.arch }}.tgz
+          path: mdns2mqtt-${{ matrix.os }}-${{ matrix.arch }}.tgz
           if-no-files-found: error
       - name: Debian package
         if: matrix.os == 'linux'
