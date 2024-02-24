@@ -17,23 +17,23 @@ jobs:
         with:
           go-version: '1.21'
       - name: Build
-        run: GOOS=${{ matrix.os }} GOARCH=${{ matrix.go-arch }} go build -tags netgo,osusergo
+        run: GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -tags netgo,osusergo
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
-          name: binary-${{ matrix.os }}-${{ matrix.go-arch }}
+          name: binary-${{ matrix.os }}-${{ matrix.arch }}
           path: mdns2mqtt
           if-no-files-found: error
       - name: Debian package
         if: ${{ matrix.os == 'linux' }}
         uses: bpicode/github-action-fpm@master
         with:
-          fpm_opts: -s dir -t deb -n mdns2mqtt -a ${{ matrix.deb-arch }} -v 0.0.0 mdns2mqtt=/usr/bin/mdns2mqtt
+          fpm_opts: -s dir -t deb -n mdns2mqtt -a ${{ matrix.arch }} -v 0.0.0 mdns2mqtt=/usr/bin/mdns2mqtt
       - name: Upload .deb package
         uses: actions/upload-artifact@v4
         if: ${{ matrix.os == 'linux' }}
         with:
-          name: debian-${{ matrix.os }}-${{ matrix.deb-arch }}
+          name: debian-${{ matrix.os }}-${{ matrix.arch }}
           path: "*.deb"
           if-no-files-found: error
       - name: Set up QEMU
@@ -47,15 +47,15 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: ${{ matrix.os }}/${{ matrix.docker-arch }}
-          outputs: type=docker,dest=/tmp/image-${{ matrix.docker-arch }}.tar
-          tags: invlid/mdns2mqtt:latest-${{ matrix.docker-arch }}
+          platforms: ${{ matrix.os }}/${{ matrix.arch }}
+          outputs: type=docker,dest=/tmp/image-${{ matrix.arch }}.tar
+          tags: invlid/mdns2mqtt:latest-${{ matrix.arch }}
       - name: Upload Docker image
         if: ${{ matrix.os == 'linux' }}
         uses: actions/upload-artifact@v4
         with:
-          name: docker-image-${{ matrix.docker-arch }}
-          path: /tmp/image-${{ matrix.docker-arch }}.tar
+          name: docker-image-${{ matrix.arch }}
+          path: /tmp/image-${{ matrix.arch }}.tar
           if-no-files-found: error
   lint:
     runs-on: ubuntu-latest
