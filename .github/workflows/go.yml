@@ -82,7 +82,7 @@ jobs:
         uses: imjasonh/setup-crane@v0.1
       - name: Log in to Docker registry
         run: |
-          crane auth login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASSWORD }}
+          crane auth login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASSWORD }} docker.io
       - name: Push images
         run: |
           crane digest i --tarball /tmp/image-amd64.tar
