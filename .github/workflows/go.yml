@@ -24,10 +24,12 @@ jobs:
           path: mdns2mqtt
           if-no-files-found: error
       - name: Debian package
+        if: ${{ matrix.os == 'linux'}}
         uses: bpicode/github-action-fpm@master
         with:
-          fpm_opts: -s dir -t deb -n mdns2mqtt -a ${{ matrix.arch }} -v $(git describe --tags) mdns2mqtt=/usr/bin/mdns2mqtt
+          fpm_opts: -s dir -t deb -n mdns2mqtt -a ${{ matrix.arch }} -v 0.0.0 mdns2mqtt=/usr/bin/mdns2mqtt
       - uses: actions/upload-artifact@v4
+        if: ${{ matrix.os == 'linux'}}
         with:
           name: debian-${{ matrix.os }}-${{ matrix.arch }}
           path: "*.deb"
