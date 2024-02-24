@@ -18,11 +18,12 @@ jobs:
           go-version: '1.21'
       - name: Build
         run: GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -tags netgo,osusergo
+      - run: tar cvzf mdns2mqtt-${{ matrix.arch }}.tgz mdns2mqtt
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
           name: binary-${{ matrix.os }}-${{ matrix.arch }}
-          path: mdns2mqtt
+          path: mdns2mqtt-${{ matrix.arch }}.tgz
           if-no-files-found: error
       - name: Debian package
         if: ${{ matrix.os == 'linux' }}
@@ -76,14 +77,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           merge-multiple: true
-          pattern: docker-image-*
           path: /tmp
       - name: Set up Crane
         uses: imjasonh/setup-crane@v0.1
       - name: Log in to Docker registry
         run: |
           crane auth login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASSWORD }} docker.io
-      - name: Push images
+      - name: Push latest images
         run: |
           crane push /tmp/image-amd64.tar docker.io/invlid/mdns2mqtt:latest-amd64
           crane push /tmp/image-arm64.tar docker.io/invlid/mdns2mqtt:latest-arm64
@@ -93,3 +93,21 @@ jobs:
             -m docker.io/invlid/mdns2mqtt@$(crane digest --tarball /tmp/image-arm64.tar) \
             -m docker.io/invlid/mdns2mqtt@$(crane digest --tarball /tmp/image-mips.tar) \
             -t docker.io/invlid/mdns2mqtt:latest
+      - name: Push release images
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          crane push /tmp/image-amd64.tar docker.io/invlid/mdns2mqtt:${{ github.ref_name }}-amd64
+          crane push /tmp/image-arm64.tar docker.io/invlid/mdns2mqtt:${{ github.ref_name }}-arm64
+          crane push /tmp/image-mips.tar docker.io/invlid/mdns2mqtt:${{ github.ref_name }}-mips
+          crane index append \
+            -m docker.io/invlid/mdns2mqtt@$(crane digest --tarball /tmp/image-amd64.tar) \
+            -m docker.io/invlid/mdns2mqtt@$(crane digest --tarball /tmp/image-arm64.tar) \
+            -m docker.io/invlid/mdns2mqtt@$(crane digest --tarball /tmp/image-mips.tar) \
+            -t docker.io/invlid/mdns2mqtt:${{ github.ref_name }}
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            /tmp/mdns2mqtt-*.tgz
+            /tmp/mdns2mqtt*.deb
