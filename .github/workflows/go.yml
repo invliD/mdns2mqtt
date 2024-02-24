@@ -85,6 +85,11 @@ jobs:
           crane auth login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASSWORD }} docker.io
       - name: Push images
         run: |
-          crane digest docker.io/invlid/mdns2mqtt:latest-amd64 --tarball /tmp/image-amd64.tar
-          crane digest docker.io/invlid/mdns2mqtt:latest-arm64 --tarball /tmp/image-arm64.tar
-          crane digest docker.io/invlid/mdns2mqtt:latest-mips --tarball /tmp/image-mips.tar
+          crane push /tmp/image-amd64.tar docker.io/invlid/mdns2mqtt:latest-amd64
+          crane push /tmp/image-arm64.tar docker.io/invlid/mdns2mqtt:latest-arm64
+          crane push /tmp/image-mips.tar docker.io/invlid/mdns2mqtt:latest-mips
+          crane index append \
+            -m docker.io/invlid/mdns2mqtt@$(crane digest --tarball /tmp/image-amd64.tar) \
+            -m docker.io/invlid/mdns2mqtt@$(crane digest --tarball /tmp/image-arm64.tar) \
+            -m docker.io/invlid/mdns2mqtt@$(crane digest --tarball /tmp/image-mips.tar) \
+            -t docker.io/invlid/mdns2mqtt:latest-test
