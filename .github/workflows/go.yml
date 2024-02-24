@@ -34,7 +34,7 @@ jobs:
         if: matrix.os == 'linux'
         uses: bpicode/github-action-fpm@master
         with:
-          fpm_opts: -s dir -t deb -n mdns2mqtt -a ${{ matrix.arch }} -v ${{ steps.version.outputs.version }} mdns2mqtt=/usr/bin/mdns2mqtt
+          fpm_opts: -s dir -t deb -n mdns2mqtt -a ${{ matrix.arch }} -v ${{ steps.version.outputs.version }} --deb-default debian/mdns2mqtt --deb-systemd debian/mdns2mqtt.service mdns2mqtt=/usr/bin/mdns2mqtt
       - name: Upload .deb package
         uses: actions/upload-artifact@v4
         if: matrix.os == 'linux'
